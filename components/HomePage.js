@@ -121,7 +121,7 @@ const HomePage = () => {
             borderRadius="18px"
             boxShadow="0px 4px 6px rgba(0,0,0,0.1)"
           >
-            <Typography variant="h5" component="h1" m={2} color="primary">Post you memory</Typography>
+            <Typography variant="h5" component="h1" m={2} color="primary">Post your memory</Typography>
             <label htmlFor="upload-photo">
               <StyledInput
                 id="upload-photo"
