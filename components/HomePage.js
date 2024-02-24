@@ -36,7 +36,9 @@ const HomePage = () => {
 
   useEffect(() => {
     console.log("Effect triggered");
-    const socket = io("http://localhost:3000");
+    const socket = io("http://localhost:3000", {
+      transports: ["websocket"],
+    });
     setSocket(socket);
 
     socket.on("connect", () => {
@@ -52,6 +54,7 @@ const HomePage = () => {
     });
 
     socket.on("updatePhotos", (photoData) => {
+      console.log("Received updated photo data:", photoData);
       setPhoto(photoData);
     });
 
@@ -71,10 +74,13 @@ const HomePage = () => {
 
   const handleLike = (index) => {
     if (!likedIndexes.includes(index)) {
-      const updatedPhotos = [...photo];
-      updatedPhotos[index].likes++;
+      const updatedPhotos = photo.map((item, i) => {
+        if (i === index) {
+          return { ...item, likes: item.likes + 1 };
+        }
+        return item;
+      });
       setPhoto(updatedPhotos);
-      console.log("Emitting like event...");
       socket.emit("like", { index, photo: updatedPhotos[index] });
       setLikedIndexes([...likedIndexes, index]);
     }
@@ -82,11 +88,16 @@ const HomePage = () => {
 
   const handleComment = (index) => {
     if (commentText.trim() !== "") {
-      const updatedPhotos = [...photo];
-      updatedPhotos[index].comments = updatedPhotos[index].comments || [];
-      updatedPhotos[index].comments.push(commentText); 
+      const updatedPhotos = photo.map((item, i) => {
+        if (i === index) {
+          return {
+            ...item,
+            comments: [...(item.comments || []), commentText],
+          };
+        }
+        return item;
+      });
       setPhoto(updatedPhotos);
-      console.log("Emitting comment");
       socket.emit("comment", { index, photo: updatedPhotos[index] });
       setCommentText("");
     }
@@ -95,14 +106,13 @@ const HomePage = () => {
   const handleSubmit = () => {
     if (selectedPhoto && selectedPhoto.size <= 5 * 1024 * 1024) {
       const url = URL.createObjectURL(selectedPhoto);
-      const newPhoto = { url, description, likes: 0, comments: [] }; 
-      setPhoto([...photo, newPhoto]);
-
-      socket.emit("likeOrComment", [...photo, newPhoto]);
-
+      const newPhoto = { url, description, likes: 0, comments: [] };
+      const updatedPhotos = [...photo, newPhoto];
+      setPhoto(updatedPhotos);
+      socket.emit("likeOrComment", updatedPhotos);
       setDescription("");
-      setSelectedPhoto(null); 
-      setShowCards(true); 
+      setSelectedPhoto(null);
+      setShowCards(true);
     } else {
       setShowAlert(true);
     }
@@ -121,7 +131,9 @@ const HomePage = () => {
             borderRadius="18px"
             boxShadow="0px 4px 6px rgba(0,0,0,0.1)"
           >
-            <Typography variant="h5" component="h1" m={2} color="primary">Post your memory</Typography>
+            <Typography variant="h5" component="h1" m={2} color="primary">
+              Post your memory
+            </Typography>
             <label htmlFor="upload-photo">
               <StyledInput
                 id="upload-photo"
